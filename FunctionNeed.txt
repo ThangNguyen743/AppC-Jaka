@@ -1,0 +1,114 @@
+I. Danh Sách Các Việc Cần Làm (To-Do List)
+Để xây dựng ứng dụng điều khiển robot JAKA bằng C#, bạn cần thực hiện các bước chuẩn bị và cấu hình sau:
+1. Tải SDK: Tải gói phần mềm JAKA SDK từ trang web chính thức.
+2. Cài đặt Môi trường: Cài đặt nền tảng lập trình Microsoft Visual Studio (khuyến nghị sử dụng .NET framework 6.0 trở lên, như được đề cập trong ví dụ tài liệu).
+3. Tạo Dự án Mới: Tạo một dự án ứng dụng mới trong Visual Studio (ví dụ: Windows Form App nếu chạy trên Windows hoặc ứng dụng đa nền tảng).
+4. Cấu hình Môi trường Biên dịch và Liên kết:
+    ◦ Thêm các tập tin header C# (jakaAPI.cs và jkType.cs) vào dự án.
+    ◦ Sao chép thư viện chia sẻ C# (DLL, ví dụ: jakaAPI.dll) vào thư mục chương trình chính của dự án (thường là thư mục bin).
+    ◦ Thêm các câu lệnh using cần thiết vào mã nguồn (ví dụ: using jkType; và using jakaApi;).
+5. Viết Mã Ứng dụng: Phát triển giao diện và logic điều khiển robot bằng cách gọi các API C# của SDK.
+6. Biên dịch và Chạy: Biên dịch Solution và thực thi chương trình.
+
+--------------------------------------------------------------------------------
+II. Hướng Dẫn Các Bước Tạo Ứng Dụng (Step-by-Step Guide)
+Phần SDK C# của JAKA được triển khai bằng cách đóng gói SDK C thông qua cơ chế Platform Invoke (P/Invoke) của .NET, sử dụng thuộc tính DllImport. Đây là cơ chế cốt lõi cho phép mã được quản lý (managed code, như C#) tương tác với mã gốc (native code, như C).
+A. Chuẩn bị SDK và Môi trường
+1. Tổ chức file SDK: Sau khi giải nén gói SDK, bạn sẽ tìm thấy thư mục Windows\csharp chứa thư mục include (chứa các file header C# như jakaAPI.cs và jkType.cs) và thư mục x64 (chứa các thư viện DLL cho hệ thống 64-bit).
+2. Cấu hình trong Visual Studio:
+    ◦ Trong dự án C# mới, bạn cần thêm hai file header C# (jakaAPI.cs và jkType.cs) từ thư mục include vào dự án của mình.
+    ◦ Đảm bảo thư viện liên kết động (DLL) nằm trong thư mục mà ứng dụng của bạn có thể tìm thấy khi chạy (thường là thư mục bin).
+B. Hiểu về Cấu trúc Dữ liệu và P/Invoke
+Khi làm việc với C# SDK của JAKA, bạn phải đảm bảo rằng các cấu trúc dữ liệu tùy chỉnh trong C# khớp với bố cục bộ nhớ của các cấu trúc C tương ứng.
+• Mapping kiểu dữ liệu: Bạn cần chú ý đến việc ánh xạ các kiểu dữ liệu giữa C và C# (ví dụ: int sang int, double sang double, char* sang string hoặc char[], và con trỏ int* sang ref int hoặc out int).
+• Cấu trúc (Struct): Các cấu trúc phức tạp như JKTYPE.CartesianTran hoặc JKTYPE.CartesianPose cần được định nghĩa lại trong C# và sử dụng thuộc tính [StructLayout(LayoutKind.Sequential)] để chỉ định rằng các trường được lưu trữ theo thứ tự khai báo, phù hợp với căn chỉnh bộ nhớ mặc định của C.
+Ví dụ: Cấu trúc CartesianTran trong C# được định nghĩa như sau:
+[StructLayout(LayoutKind.Sequential)]
+public struct CartesianTran
+{
+    public double x; ///< Tọa độ x, đơn vị: mm [13]
+    public double y; ///< Tọa độ y, đơn vị: mm [13]
+    public double z; ///< Tọa độ z, đơn vị: mm [13]
+};
+C. Khởi tạo và Điều khiển Cơ bản
+Các bước cơ bản trong mã C# của bạn sẽ luôn tuân theo chu trình: Tạo handle -> Thao tác -> Hủy handle.
+1. Tạo Handle (Kết nối): Sử dụng hàm create_handler để tạo một handle điều khiển robot, cần truyền địa chỉ IP của bộ điều khiển. API C#: int create_handler(char[] ip, ref int handle, bool use_grpc = false). Ví dụ: int result = jakaAPI.create_handler("192.168.2.160".ToCharArray(), ref handle);.
+2. Thao tác Cơ bản: Sau khi có handle, bạn cần thực hiện các thao tác khởi động robot:
+    ◦ Bật nguồn: int power_on(ref int handle).
+    ◦ Bật Servo (Enable): int enable_robot(ref int handle).
+3. Hủy Handle (Ngắt kết nối): Khi hoàn thành, bạn nên hủy handle để giải phóng tài nguyên: API C#: int destory_handler(ref int handle).
+
+--------------------------------------------------------------------------------
+III. Các Lệnh C# Điều khiển JAKA Chính Cần Chú Ý
+Các hàm API quan trọng nhất trong C# SDK được chia thành nhiều nhóm chức năng khác nhau, giúp bạn thực hiện mọi thao tác từ di chuyển cơ bản đến điều khiển lực nâng cao.
+1. Thao tác Cơ bản của Robot (Basic Operations of the Robot)
+Ngoài create_handler, power_on, và enable_robot đã đề cập, bạn nên biết:
+• Tắt Servo: int disable_robot(ref int handle).
+• Tắt nguồn: int power_off(ref int handle).
+• Tắt tủ điều khiển: int shut_down(ref int handle).
+• Truy vấn trạng thái:
+    ◦ Lấy trạng thái tổng quát (ví dụ: đã bật nguồn, đã enable servo): int get_robot_state(ref int handle, ref JKTYPE.RobotState state).
+    ◦ Lấy trạng thái giám sát chi tiết (ví dụ: mã lỗi, tốc độ, vị trí khớp/Cartesian): int get_robot_status(ref int handle, ref JKTYPE.RobotStatus status).
+2. Điều khiển Chuyển động (Robot Motions)
+Các lệnh này là cốt lõi để di chuyển robot.
+Chức năng
+API C# quan trọng
+Mô tả
+Di chuyển Khớp
+int joint_move(ref int handle, ref JKTYPE.JointValue joint_pos, JKTYPE.MoveMode move_mode, bool is_block, double speed)
+Di chuyển robot đến vị trí khớp mục tiêu. Bạn chỉ định joint_pos (6 giá trị rad), chế độ di chuyển (Tuyệt đối ABS hay Tăng dần INCR), is_block (chặn/không chặn), và speed (rad/s).
+Di chuyển Tuyến tính
+int linear_move(ref int handle, ref JKTYPE.CartesianPose end_pos, JKTYPE.MoveMode move_mode, bool is_block, double speed)
+Di chuyển đầu cuối robot theo đường thẳng. Cần cung cấp vị trí đích end_pos (Cartesian pose: vị trí tran và hướng rpy), chế độ, chặn/không chặn, và speed (mm/s).
+Di chuyển Vòng cung
+int circular_move(ref int i, ref JKTYPE.CartesianPose end_pos, ref JKTYPE.CartesianPose mid_pos, ...)
+Di chuyển theo cung tròn qua điểm giữa (mid_pos) đến điểm cuối (end_pos).
+Di chuyển bằng tay
+int jog(...)
+Điều khiển di chuyển jog trong chế độ thủ công.
+Ngừng khẩn cấp
+int motion_abort()
+Ngừng chuyển động hiện tại của robot.
+Đặt Tốc độ chung
+int set_rapidrate(ref int handle, double rapid_rate)
+Đặt tỷ lệ tốc độ chạy chương trình (rapid_rate), từ 0 đến 1.
+3. Thiết lập và Truy vấn Vị trí/Thông số
+Các lệnh này giúp bạn tương tác với các tham số cấu hình của robot và nhận dữ liệu thời gian thực.
+Chức năng
+API C# quan trọng
+Mô tả
+Lấy Vị trí Khớp
+int get_joint_position(ref int handle, ref JKTYPE.JointValue joint_position)
+Lấy giá trị góc khớp hiện tại của 6 khớp (đơn vị: rad).
+Lấy Vị trí TCP
+int get_tcp_position(ref int handle, ref JKTYPE.CartesianPose tcp_position)
+Lấy vị trí và tư thế của đầu cuối công cụ (TCP) (Vị trí: mm, Góc: rad).
+Thiết lập Tool ID
+int set_tool_id(ref int handle, int id)
+Thiết lập ID của công cụ (Tool ID) đang sử dụng (0 là tâm mặt bích).
+Thiết lập Hệ tọa độ User
+int set_user_frame_id(ref int handle, int id)
+Thiết lập ID của hệ tọa độ người dùng (User Coordinate System ID) đang sử dụng (0 là hệ tọa độ Thế giới).
+Thiết lập Tải trọng
+int set_payload(ref int handle, ref JKTYPE.PayLoad payload)
+Thiết lập khối lượng (mass, kg) và tâm khối lượng (centroid, mm) của tải trọng.
+4. Điều khiển IO và Chế độ Kéo/Thả (IO / Drag Mode)
+• Bật/Tắt chế độ kéo/thả: int drag_mode_enable(ref int handle, bool enable). (TRUE để vào chế độ kéo/thả, FALSE để thoát).
+• Thiết lập đầu ra số (DO): int set_digital_output(ref int handle, JKTYPE.IOType type, int index, bool value). (Cần chỉ định loại IO: IO_CABINET, IO_TOOL, hoặc IO_EXTEND).
+• Truy vấn đầu vào số (DI): int get_digital_input(ref int handle, JKTYPE.IOType type, int index, ref bool result).
+5. Lập trình và Quản lý Chương trình Ứng dụng (APP Script Program)
+Nếu bạn muốn điều khiển các chương trình script đã được lập trình sẵn trên bộ điều khiển (APP Script Program):
+• Load chương trình: int program_load(ref int handle, char[] file).
+• Chạy chương trình: int program_run(ref int handle).
+• Tạm dừng/Tiếp tục: int program_pause(ref int handle) / int program_resume(ref int handle).
+• Ngắt chương trình: int program_abort(ref int handle).
+• Lấy trạng thái chương trình: int get_program_state(ref int handle, ref JKTYPE.ProgramState status).
+
+
+| Ký hiệu                 | Nghĩa                     | Hành động                                     |
+| ----------------------- | ------------------------- | --------------------------------------------- |
+| `ref int handle`        | Robot đang kết nối        | Luôn truyền `ref handle`                      |
+| `ref JKTYPE.XYZ`        | Dữ liệu cấu trúc phức tạp | Tạo biến `JKTYPE.XYZ xyz = new JKTYPE.XYZ();` |
+| `double[]` hoặc `int[]` | Mảng dữ liệu              | `new double[6]`, `new int[3]`                 |
+| `ref` hoặc `out`        | Giá trị trả ra            | Đọc kết quả sau khi gọi hàm                   |
+| Không có `ref`          | Giá trị đầu vào           | Gán trước khi gọi hàm                         |
