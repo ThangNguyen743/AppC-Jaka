@@ -54,42 +54,42 @@ Các lệnh này là cốt lõi để di chuyển robot.
 Chức năng
 API C# quan trọng
 Mô tả
-Di chuyển Khớp
+- Di chuyển Khớp
 int joint_move(ref int handle, ref JKTYPE.JointValue joint_pos, JKTYPE.MoveMode move_mode, bool is_block, double speed)
 Di chuyển robot đến vị trí khớp mục tiêu. Bạn chỉ định joint_pos (6 giá trị rad), chế độ di chuyển (Tuyệt đối ABS hay Tăng dần INCR), is_block (chặn/không chặn), và speed (rad/s).
-Di chuyển Tuyến tính
+- Di chuyển Tuyến tính
 int linear_move(ref int handle, ref JKTYPE.CartesianPose end_pos, JKTYPE.MoveMode move_mode, bool is_block, double speed)
 Di chuyển đầu cuối robot theo đường thẳng. Cần cung cấp vị trí đích end_pos (Cartesian pose: vị trí tran và hướng rpy), chế độ, chặn/không chặn, và speed (mm/s).
-Di chuyển Vòng cung
+- Di chuyển Vòng cung
 int circular_move(ref int i, ref JKTYPE.CartesianPose end_pos, ref JKTYPE.CartesianPose mid_pos, ...)
 Di chuyển theo cung tròn qua điểm giữa (mid_pos) đến điểm cuối (end_pos).
-Di chuyển bằng tay
+- Di chuyển bằng tay
 int jog(...)
 Điều khiển di chuyển jog trong chế độ thủ công.
-Ngừng khẩn cấp
+- Ngừng khẩn cấp
 int motion_abort()
 Ngừng chuyển động hiện tại của robot.
-Đặt Tốc độ chung
+- Đặt Tốc độ chung
 int set_rapidrate(ref int handle, double rapid_rate)
-Đặt tỷ lệ tốc độ chạy chương trình (rapid_rate), từ 0 đến 1.
+- Đặt tỷ lệ tốc độ chạy chương trình (rapid_rate), từ 0 đến 1.
 3. Thiết lập và Truy vấn Vị trí/Thông số
 Các lệnh này giúp bạn tương tác với các tham số cấu hình của robot và nhận dữ liệu thời gian thực.
 Chức năng
 API C# quan trọng
 Mô tả
-Lấy Vị trí Khớp
+- Lấy Vị trí Khớp
 int get_joint_position(ref int handle, ref JKTYPE.JointValue joint_position)
 Lấy giá trị góc khớp hiện tại của 6 khớp (đơn vị: rad).
-Lấy Vị trí TCP
+- Lấy Vị trí TCP
 int get_tcp_position(ref int handle, ref JKTYPE.CartesianPose tcp_position)
 Lấy vị trí và tư thế của đầu cuối công cụ (TCP) (Vị trí: mm, Góc: rad).
-Thiết lập Tool ID
+- Thiết lập Tool ID
 int set_tool_id(ref int handle, int id)
 Thiết lập ID của công cụ (Tool ID) đang sử dụng (0 là tâm mặt bích).
-Thiết lập Hệ tọa độ User
+- Thiết lập Hệ tọa độ User
 int set_user_frame_id(ref int handle, int id)
-Thiết lập ID của hệ tọa độ người dùng (User Coordinate System ID) đang sử dụng (0 là hệ tọa độ Thế giới).
-Thiết lập Tải trọng
+- Thiết lập ID của hệ tọa độ người dùng (User Coordinate System ID) đang sử dụng (0 là hệ tọa độ Thế giới).
+- Thiết lập Tải trọng
 int set_payload(ref int handle, ref JKTYPE.PayLoad payload)
 Thiết lập khối lượng (mass, kg) và tâm khối lượng (centroid, mm) của tải trọng.
 4. Điều khiển IO và Chế độ Kéo/Thả (IO / Drag Mode)
