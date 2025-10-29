@@ -5,6 +5,7 @@ using System.Windows;
 using jakaApi;
 using jkType;
 //Phuc da o day
+//hi
 namespace WpfApp1
 {
     public partial class MainWindow : Window
