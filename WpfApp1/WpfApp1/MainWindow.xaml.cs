@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 using System.Windows;
 using jakaApi;
 using jkType;
-
+//Phuc da o day
 namespace WpfApp1
 {
     public partial class MainWindow : Window
