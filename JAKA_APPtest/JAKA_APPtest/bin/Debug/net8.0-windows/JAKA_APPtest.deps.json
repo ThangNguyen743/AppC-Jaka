@@ -1,0 +1,23 @@
+{
+  "runtimeTarget": {
+    "name": ".NETCoreApp,Version=v8.0",
+    "signature": ""
+  },
+  "compilationOptions": {},
+  "targets": {
+    ".NETCoreApp,Version=v8.0": {
+      "JAKA_APPtest/1.0.0": {
+        "runtime": {
+          "JAKA_APPtest.dll": {}
+        }
+      }
+    }
+  },
+  "libraries": {
+    "JAKA_APPtest/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    }
+  }
+}
