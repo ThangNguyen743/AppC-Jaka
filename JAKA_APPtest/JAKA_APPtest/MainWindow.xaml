@@ -63,6 +63,7 @@
                 <Button x:Name="btnEnable" Content="Enable" Style="{StaticResource ModernButtonStyle}" Click="Enable_Click"/>
                 <Button x:Name="btnDisable" Content="Disable" Style="{StaticResource ModernButtonStyle}" Click="Disable_Click"/>
                 <Button x:Name="btnPowerOff" Content="Power Off" Style="{StaticResource ModernButtonStyle}" Click="PowerOff_Click"/>
+				<Button x:Name="btnShutDown" Content="Shut Down" Style="{StaticResource ModernButtonStyle}" Click="ShutDown_Click"/>
                 <Button x:Name="btnTheme" Content="🌙 Dark Mode" Style="{StaticResource ModernButtonStyle}" Click="ThemeToggle_Click"/>
             </WrapPanel>
         </Border>
@@ -120,7 +121,7 @@
                             <Slider x:Name="sldSpeed" Minimum="5" Maximum="100" Value="20"
             Width="200" Grid.Column="1" VerticalAlignment="Center"
             ValueChanged="Slider_ValueChanged"/>
-                            <Label x:Name="lblSpeed" Content="20%" Grid.Column="2"
+                            <Label x:Name="lblSpeed" Content="20.000%" Grid.Column="2"
            VerticalAlignment="Center" Margin="10,0,0,0"/>
                         </Grid>
                     </StackPanel>
@@ -207,7 +208,8 @@
                             <!-- Nút -->
                             <WrapPanel HorizontalAlignment="Center">
                                 <Button x:Name="btnGetPose" Content="📡 Get Pose" Style="{StaticResource ModernButtonStyle}" Click="GetPose_Click"/>
-                                <Button x:Name="btnMovePose" Content="🚀 Move Pose" Style="{StaticResource ModernButtonStyle}" Click="MovePose_Click"/>
+                                <Button x:Name="btnMoveLinear" Content="🚀 Move Linear" Style="{StaticResource ModernButtonStyle}" Click="MoveLinear_Click"/>
+                                <Button x:Name="btnMoveJointCar" Content="❤️ Move Joint" Style="{StaticResource ModernButtonStyle}" Click="MoveJointCar_Click"/>
                             </WrapPanel>
                         </StackPanel>
                     </Border>

@@ -1,5 +1,8 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
+using System.Reflection.Metadata;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -7,8 +10,6 @@ using System.Windows.Media;
 using System.Windows.Threading;
 using jakaApi;
 using jkType;
-using System.Collections.Generic;
-using System.Linq;
 
 namespace JAKA_APP
 {
@@ -18,7 +19,7 @@ namespace JAKA_APP
         private bool connected = false;
         private bool enabled = false;
         private bool dark = false;
-        private double speed = 20.0;
+        private double speed = 20.000;
         private readonly double d2r = Math.PI / 180.0;
 
         private readonly double[] jointMin = { -360, -50, -155, -85, -360, -360 };
@@ -165,6 +166,25 @@ namespace JAKA_APP
             UpdateUIState();
         }
 
+        private void ShutDown_Click(object sender, RoutedEventArgs e)
+        {
+            if (!connected) return;
+            int retsult = jakaAPI.motion_abort(ref rshd);
+            if(retsult == 0)
+            {
+                Log($"Tất cả đã dừng chuyển động ({retsult})");
+                int ret = jakaAPI.shut_down(ref rshd);
+                if (ret == 0)
+                {
+                    StopJointSync();
+                    Log("ShutDown OK");
+                }
+                else Log($" lỗi ({ret})");
+                UpdateUIState();
+            }
+            else { Log($"Lỗi dừng chuyển động ({retsult})"); }
+        }
+
         private void UpdateUIState()
         {
             bool canMove = connected && enabled;
@@ -189,13 +209,40 @@ namespace JAKA_APP
         #endregion
 
         #region === Joint Control ===
+ 
+        // Cập nhật hàm xử lý sự kiện Slider_ValueChanged thiết lập vào biến speed hiển thị
         private void Slider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
         {
-            speed = e.NewValue;
-            if (lblSpeed != null) lblSpeed.Content = $"{speed:0}%";
+            // Lấy giá trị mới từ slider
+            double newValue = e.NewValue;
+
+            // Giới hạn trong khoảng 5–100
+            newValue = Math.Max(5, Math.Min(100, newValue));
+
+            // Làm tròn theo bội số 0.25
+            newValue = Math.Round(newValue / 0.25) * 0.25;
+
+            // Gán lại cho biến speed
+            speed = newValue;
+
+            // Cập nhật hiển thị
+            if (lblSpeed != null)
+                lblSpeed.Content = $"{speed:0.000}%";
         }
 
-        private float SpeedRatio() => (float)(Math.Max(5, Math.Min(100, speed)) / 100.0);
+
+        //thiết lập speed cho các hàm di chuyển
+        private float SpeedRatio()
+        {
+            // Giới hạn trong khoảng 5–100
+            double clamped = Math.Max(5, Math.Min(100, speed));
+
+            // Làm tròn về bội số 0.25
+            clamped = Math.Round(clamped / 0.25) * 0.25;
+
+            // Chuẩn hóa thành tỉ lệ [0.05, 1.0]
+            return (float)(clamped / 100.0);
+        }
 
         private bool CheckJointLimit(int index1based, double degree)
         {
@@ -231,24 +278,28 @@ namespace JAKA_APP
                 await Task.Delay(TimeSpan.FromSeconds(stepTime));
             }
         }
-
         private async void MoveJoint_Click(object sender, RoutedEventArgs e)
         {
-            if (!connected || !enabled) return;
-            if (sender is not Button btn || btn.Tag == null) return;
 
-            int j = int.Parse(btn.Tag.ToString());
-            TextBox tb = (TextBox)FindName($"txtJ{j}");
-            if (!double.TryParse(tb.Text, out double deg))
-            {
-                MessageBox.Show($"Joint {j} không hợp lệ!");
-                return;
-            }
-            if (!CheckJointLimit(j, deg)) return;
-
-            Log($"Smooth Joint {j} → {deg:0.0}° | speed={SpeedRatio():0.00}");
-            await SmoothMoveJoint(j - 1, deg, 1.0);
         }
+
+        //private async void MoveJoint_Click(object sender, RoutedEventArgs e)
+        //{
+        //    if (!connected || !enabled) return;
+        //    if (sender is not Button btn || btn.Tag == null) return;
+
+        //    int j = int.Parse(btn.Tag.ToString());
+        //    TextBox tb = (TextBox)FindName($"txtJ{j}");
+        //    if (!double.TryParse(tb.Text, out double deg))
+        //    {
+        //        MessageBox.Show($"Joint {j} không hợp lệ!");
+        //        return;
+        //    }
+        //    if (!CheckJointLimit(j, deg)) return;
+
+        //    Log($"Smooth Joint {j} → {deg:0.0}° | speed={SpeedRatio():0.00}");
+        //    await SmoothMoveJoint(j - 1, deg, 1.0);
+        //}
 
         private async void MoveAllJoints_Click(object sender, RoutedEventArgs e)
         {
@@ -431,9 +482,9 @@ namespace JAKA_APP
                 {
                     if (ret == 0)
                     {
-                        txtX.Text = (pose.tran.x *1000 ).ToString("0.0");
-                        txtY.Text = (pose.tran.y * 1000).ToString("0.0");
-                        txtZ.Text = (pose.tran.z * 1000).ToString("0.0");
+                        txtX.Text = (pose.tran.x).ToString("0.0");
+                        txtY.Text = (pose.tran.y).ToString("0.0");
+                        txtZ.Text = (pose.tran.z).ToString("0.0");
                         txtRX.Text = (pose.rpy.rx * 180 / Math.PI).ToString("0.0");
                         txtRY.Text = (pose.rpy.ry * 180 / Math.PI).ToString("0.0");
                         txtRZ.Text = (pose.rpy.rz * 180 / Math.PI).ToString("0.0");
@@ -445,7 +496,7 @@ namespace JAKA_APP
             });
         }
 
-        private async void MovePose_Click(object sender, RoutedEventArgs e)
+        private async void MoveLinear_Click(object sender, RoutedEventArgs e)
         {
             if (!connected || !enabled)
             {
@@ -456,16 +507,16 @@ namespace JAKA_APP
             try
             {
                 // --- Lấy giá trị từ textbox ---
-                double x = double.Parse(txtX.Text) / 1000.0; // mm → m
-                double y = double.Parse(txtY.Text) / 1000.0;
-                double z = double.Parse(txtZ.Text) / 1000.0;
+                double x = double.Parse(txtX.Text) / 1; // mm → m
+                double y = double.Parse(txtY.Text) / 1;
+                double z = double.Parse(txtZ.Text) / 1;
 
                 double rx = double.Parse(txtRX.Text) * Math.PI / 180.0;
                 double ry = double.Parse(txtRY.Text) * Math.PI / 180.0;
                 double rz = double.Parse(txtRZ.Text) * Math.PI / 180.0;
 
                 // --- Tạo pose theo SDK ---
-                var pose = new JKTYPE.CartesianPose
+                var Car_pose = new JKTYPE.CartesianPose
                 {
                     tran = new JKTYPE.CartesianTran { x = x, y = y, z = z },
                     rpy = new JKTYPE.Rpy { rx = rx, ry = ry, rz = rz }
@@ -473,20 +524,112 @@ namespace JAKA_APP
 
                 // --- Quy đổi speed (%) thành vận tốc thực tế ---
                 float v = (float)(100 * SpeedRatio());  // 0.25 m/s là tốc độ tối đa đề xuất
-                Log($"Move TCP → X={x * 1000:0.0} Y={y * 1000:0.0} Z={z * 1000:0.0} | Speed={v:0.00} m/s");
+                Log($"Move TCP → X={x * 1:0.0} Y={y * 1:0.0} Z={z * 1:0.0} Rx={rx} Ry={ry} Rz={rz} | Speed={v:0.00} m/s");
 
-                // --- Thực thi lệnh di chuyển ---
-                await Task.Run(() =>
-                {
-                    int ret = jakaAPI.linear_move(ref rshd, ref pose, JKTYPE.MoveMode.ABS, true, v);
-                    Dispatcher.Invoke(() =>
+                //giải thuật Nghịch đảo kin để kiểm tra
+                JKTYPE.JointValue Joint_pos = new JKTYPE.JointValue();
+                Joint_pos.jVal = new double[6];
+                jakaAPI.get_joint_position(ref rshd, ref Joint_pos);
+                //Lấy kết quả
+                JKTYPE.JointValue Result_joint = new JKTYPE.JointValue();
+                Result_joint.jVal = new double[6];
+                int ret_inv = jakaAPI.kine_inverse(ref rshd, ref Joint_pos, ref Car_pose, ref Result_joint);
+                if (ret_inv == 0) {           
+                    Log("Giải nghịch đảo thành công. Vị trí Joint tương ứng:");
+                    for (int i = 0; i < 6; i++)
                     {
-                        if (ret == 0)
-                            Log($"Cartesian Move thành công (Speed={v:0.00} m/s)");
-                        else
-                            Log($"Lỗi khi di chuyển (Code {ret})");
+                        Log($"  Joint {i + 1}: {Result_joint.jVal[i] * 180 / Math.PI:0.00}°");
+                    }
+                    // --- Thực thi lệnh di chuyển ---
+                    await Task.Run(() =>
+                    {
+                        int ret = jakaAPI.linear_move(ref rshd, ref Car_pose, JKTYPE.MoveMode.ABS, true, v);
+                        Dispatcher.Invoke(() => //chuyển về luồng giao diện để cập nhật log
+                        {
+                            if (ret == 0)
+                                Log($"Cartesian Move thành công (Speed={v:0.00} m/s)");
+                            else
+                                Log($"Lỗi khi di chuyển (Code {ret})");
+                        });
                     });
-                });
+                }
+                else
+                {
+                    Log($"Giải nghịch đảo thất bại. Mã lỗi: {ret_inv}");
+                    return;
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Lỗi dữ liệu: {ex.Message}", "Lỗi", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        //public static extern int joint_move(ref int handle, ref JKTYPE.JointValue joint_pos,
+        //JKTYPE.MoveMode move_mode, bool is_block, double speed);
+        private async void MoveJointCar_Click(object sender, RoutedEventArgs e)
+        {
+            if (!connected || !enabled)
+            {
+                MessageBox.Show("Robot chưa sẵn sàng!");
+                return;
+            }
+
+            try
+            {
+                // --- Lấy giá trị từ textbox ---
+                double x = double.Parse(txtX.Text) / 1; // mm → m
+                double y = double.Parse(txtY.Text) / 1;
+                double z = double.Parse(txtZ.Text) / 1;
+
+                double rx = double.Parse(txtRX.Text) * Math.PI / 180.0;
+                double ry = double.Parse(txtRY.Text) * Math.PI / 180.0;
+                double rz = double.Parse(txtRZ.Text) * Math.PI / 180.0;
+
+                // --- Tạo pose theo SDK ---
+                var Car_pose = new JKTYPE.CartesianPose
+                {
+                    tran = new JKTYPE.CartesianTran { x = x, y = y, z = z },
+                    rpy = new JKTYPE.Rpy { rx = rx, ry = ry, rz = rz }
+                };
+
+                // --- Quy đổi speed (%) thành vận tốc thực tế ---
+                float v = (float)(100 * SpeedRatio());  // 0.25 m/s là tốc độ tối đa đề xuất
+                Log($"Move TCP → X={x * 1:0.0} Y={y * 1:0.0} Z={z * 1:0.0} Rx={rx} Ry={ry} Rz={rz} | Speed={v:0.00} m/s");
+
+                //giải thuật Nghịch đảo kin để kiểm tra
+                JKTYPE.JointValue Joint_pos = new JKTYPE.JointValue();
+                Joint_pos.jVal = new double[6];
+                jakaAPI.get_joint_position(ref rshd, ref Joint_pos);
+                //Lấy kết quả
+                JKTYPE.JointValue Result_joint = new JKTYPE.JointValue();
+                Result_joint.jVal = new double[6];
+                int ret_inv = jakaAPI.kine_inverse(ref rshd, ref Joint_pos, ref Car_pose, ref Result_joint);
+                if (ret_inv == 0)
+                {
+                    Log("Giải nghịch đảo thành công. Vị trí Joint tương ứng:");
+                    for (int i = 0; i < 6; i++)
+                    {
+                        Log($"  Joint {i + 1}: {Result_joint.jVal[i] * 180 / Math.PI:0.00}°");
+                    }
+                    // --- Thực thi lệnh di chuyển ---
+                    await Task.Run(() =>
+                    {
+                        int ret = jakaAPI.joint_move(ref rshd, ref Result_joint, JKTYPE.MoveMode.ABS, true, v);
+                        Dispatcher.Invoke(() => //chuyển về luồng giao diện để cập nhật log
+                        {
+                            if (ret == 0)
+                                Log($"Joint Move thành công (Speed={v:0.00} m/s)");
+                            else
+                                Log($"Lỗi khi di chuyển (Code {ret})");
+                        });
+                    });
+                }
+                else
+                {
+                    Log($"Giải nghịch đảo thất bại. Mã lỗi: {ret_inv}");
+                    return;
+                }
             }
             catch (Exception ex)
             {
@@ -494,7 +637,8 @@ namespace JAKA_APP
             }
         }
         #endregion
-        // === Save / Load / Clear Teach Points ===
+
+        #region === Save / Load / Clear Teach Points ===
         private void SavePointsAdv_Click(object sender, RoutedEventArgs e)
         {
             if (taughtPointsAdv.Count == 0)
@@ -559,8 +703,10 @@ namespace JAKA_APP
                 Log("Đã xóa toàn bộ danh sách điểm.");
             }
         }
-        // === Dừng / Tiếp tục Auto Sync khi người dùng nhập Joint ===
-private void JointTextBox_GotFocus(object sender, RoutedEventArgs e)
+        #endregion
+
+        #region === Dừng / Tiếp tục Auto Sync khi người dùng nhập Joint ===
+        private void JointTextBox_GotFocus(object sender, RoutedEventArgs e)
         {
             if (syncTimer != null)
             {
@@ -580,3 +726,4 @@ private void JointTextBox_GotFocus(object sender, RoutedEventArgs e)
 
     }
 }
+#endregion
