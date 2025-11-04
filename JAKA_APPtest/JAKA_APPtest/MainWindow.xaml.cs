@@ -102,6 +102,73 @@ namespace JAKA_APP
         #endregion
 
         #region === Connection & Power ===
+        private void PowerToggle_Click(object sender, RoutedEventArgs e)
+        {
+            if (!connected)
+            {
+                MessageBox.Show("Chưa kết nối robot!");
+                return;
+            }
+
+            if (!enabled && btnPower.Content.ToString() == "Power On")
+            {
+                int ret = jakaAPI.power_on(ref rshd);
+                if (ret == 0)
+                {
+                    Log("Power On OK");
+                    btnPower.Content = "Power Off";
+                }
+                else Log($"Power On lỗi ({ret})");
+            }
+            else
+            {
+                jakaAPI.disable_robot(ref rshd);
+                jakaAPI.power_off(ref rshd);
+                enabled = false;
+                StopJointSync();
+                Log("🔴 Power Off.");
+                btnPower.Content = "Power On";
+                btnEnableToggle.Content = "Enable"; // reset luôn nút Enable
+                UpdateUIState();
+            }
+        }
+
+        private void EnableToggle_Click(object sender, RoutedEventArgs e)
+        {
+            if (!connected)
+            {
+                MessageBox.Show("Chưa kết nối robot!");
+                return;
+            }
+
+            if (btnEnableToggle.Content.ToString() == "Enable")
+            {
+                int ret = jakaAPI.enable_robot(ref rshd);
+                enabled = ret == 0;
+                if (enabled)
+                {
+                    StartJointSync();
+                    Log("Enable OK");
+                    btnEnableToggle.Content = "Disable";
+                }
+                else Log($"Enable lỗi ({ret})");
+            }
+            else
+            {
+                int ret = jakaAPI.disable_robot(ref rshd);
+                if (ret == 0)
+                {
+                    enabled = false;
+                    StopJointSync();
+                    Log("Disable OK");
+                    btnEnableToggle.Content = "Enable";
+                }
+                else Log($"Disable lỗi ({ret})");
+            }
+
+            UpdateUIState();
+        }
+
         private async void Connect_Click(object sender, RoutedEventArgs e)
         {
             string ip = txtRobotIp.Text.Trim();
@@ -123,49 +190,6 @@ namespace JAKA_APP
                 });
             });
         }
-
-        private void PowerOn_Click(object sender, RoutedEventArgs e)
-        {
-            if (!connected) return;
-            int ret = jakaAPI.power_on(ref rshd);
-            Log(ret == 0 ? "Power On OK" : $"Power On lỗi ({ret})");
-        }
-
-        private void PowerOff_Click(object sender, RoutedEventArgs e)
-        {
-            if (!connected) return;
-            jakaAPI.disable_robot(ref rshd);
-            jakaAPI.power_off(ref rshd);
-            enabled = false;
-            StopJointSync();
-            Log("🔴 Power Off.");
-            UpdateUIState();
-        }
-
-        private void Enable_Click(object sender, RoutedEventArgs e)
-        {
-            if (!connected) return;
-            int ret = jakaAPI.enable_robot(ref rshd);
-            enabled = ret == 0;
-            if (enabled) StartJointSync();
-            Log(enabled ? "Enable OK" : $"Enable lỗi ({ret})");
-            UpdateUIState();
-        }
-
-        private void Disable_Click(object sender, RoutedEventArgs e)
-        {
-            if (!connected) return;
-            int ret = jakaAPI.disable_robot(ref rshd);
-            if (ret == 0)
-            {
-                enabled = false;
-                StopJointSync();
-                Log("Disable OK");
-            }
-            else Log($"Disable lỗi ({ret})");
-            UpdateUIState();
-        }
-
         private void ShutDown_Click(object sender, RoutedEventArgs e)
         {
             if (!connected) return;
@@ -189,10 +213,8 @@ namespace JAKA_APP
         {
             bool canMove = connected && enabled;
 
-            btnPowerOn.IsEnabled = connected;
-            btnEnable.IsEnabled = connected && !enabled;
-            btnDisable.IsEnabled = connected && enabled;
-            btnPowerOff.IsEnabled = connected;
+            btnPower.IsEnabled = connected;
+            btnEnableToggle.IsEnabled = connected;
             btnMoveAll.IsEnabled = canMove;
             btnMoveHome.IsEnabled = canMove;
 
@@ -209,7 +231,7 @@ namespace JAKA_APP
         #endregion
 
         #region === Joint Control ===
- 
+
         // Cập nhật hàm xử lý sự kiện Slider_ValueChanged thiết lập vào biến speed hiển thị
         private void Slider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
         {
@@ -412,6 +434,55 @@ namespace JAKA_APP
                 }
             });
         }
+        private async void RecordPointTCP_Click(object sender, RoutedEventArgs e)
+        {
+            if (!connected) return;
+
+            string name = string.IsNullOrWhiteSpace(txtPointName.Text)
+                ? $"Point{taughtPointsAdv.Count + 1}" : txtPointName.Text;
+            if (!double.TryParse(txtDelay.Text, out double delaySec)) delaySec = 0;
+
+            var pose = new JKTYPE.CartesianPose();
+            await Task.Run(() =>
+            {
+                int ret = jakaAPI.get_tcp_position(ref rshd, ref pose);
+                if (ret == 0)
+                {
+                    // Lấy giá trị X, Y, Z, RX, RY, RZ
+                    double x = pose.tran.x;
+                    double y = pose.tran.y;
+                    double z = pose.tran.z;
+                    double rx = pose.rpy.rx;
+                    double ry = pose.rpy.ry;
+                    double rz = pose.rpy.rz;
+
+                    var point = new TaughtPoint
+                    {
+                        Name = name,
+                        JointRad = new double[] { x, y, z, rx, ry, rz },
+                        DelaySec = delaySec
+                    };
+
+                    taughtPointsAdv.Add(point);
+
+                    // Hiển thị lên giao diện
+                    Dispatcher.Invoke(() =>
+                    {
+                        lstPointsAdv.Items.Add(
+                            $"[{name}] " +
+                            $"X:{x:0.0}  Y:{y:0.0}  Z:{z:0.0}  " +
+                            $"RX:{rx * 180 / Math.PI:0.0}°  " +
+                            $"RY:{ry * 180 / Math.PI:0.0}°  " +
+                            $"RZ:{rz * 180 / Math.PI:0.0}°  " +
+                            $"Delay: {delaySec:0.0}s"
+                        );
+
+                        Log($"Ghi điểm '{name}' (Delay {delaySec:0.0}s)");
+                        txtPointName.Clear();
+                    });
+                }
+            });
+        }
 
         // === Run Sequence ===
         private async void RunSequenceAdv_Click(object sender, RoutedEventArgs e)
@@ -452,6 +523,63 @@ namespace JAKA_APP
             isRunningTeach = false;
         }
 
+        private async void RunSequenceTCP_Click(object sender, RoutedEventArgs e)
+        {
+            if (!connected || !enabled || taughtPointsAdv.Count == 0)
+            {
+                MessageBox.Show("Chưa có điểm TCP nào để chạy!");
+                return;
+            }
+
+            int loopCount = int.TryParse(txtLoopCount.Text, out int val) ? val : 1;
+            bool infinite = chkLoopInfinite.IsChecked == true;
+            isRunningTeach = true;
+
+            Log($"Bắt đầu chạy TCP {(infinite ? "vô hạn" : $"{loopCount}")} vòng...");
+            int loop = 0;
+            float v = (float)(100 * SpeedRatio());
+            while (isRunningTeach && (infinite || loop < loopCount))
+            {
+                loop++;
+
+                foreach (var p in taughtPointsAdv)
+                {
+                    while (isPausedTeach) await Task.Delay(200);
+
+                    // Dùng lại giá trị TCP đã lưu
+                    var pose = new JKTYPE.CartesianPose();
+                    pose.tran.x = p.JointRad[0];
+                    pose.tran.y = p.JointRad[1];
+                    pose.tran.z = p.JointRad[2];
+                    pose.rpy.rx = p.JointRad[3];
+                    pose.rpy.ry = p.JointRad[4];
+                    pose.rpy.rz = p.JointRad[5];
+
+                    Log($"Điểm TCP: {p.Name} " +
+                        $"X:{pose.tran.x:0.0} Y:{pose.tran.y:0.0} Z:{pose.tran.z:0.0} " +
+                        $"RX:{pose.rpy.rx * 180 / Math.PI:0.0}° " +
+                        $"RY:{pose.rpy.ry * 180 / Math.PI:0.0}° " +
+                        $"RZ:{pose.rpy.rz * 180 / Math.PI:0.0}°");
+
+                    // Di chuyển tuyến tính tới điểm TCP
+                    await Task.Run(() =>
+                    {
+                        int ret = jakaAPI.linear_move(ref rshd, ref pose, JKTYPE.MoveMode.ABS, true, v);
+                        Dispatcher.Invoke(() =>
+                            Log(ret == 0 ? $" {p.Name} OK" : $" ❌ Lỗi tại {p.Name}")
+                        );
+                    });
+
+                    if (p.DelaySec > 0)
+                        await Task.Delay(TimeSpan.FromSeconds(p.DelaySec));
+
+                    if (!isRunningTeach) break;
+                }
+            }
+
+            Log("Hoàn tất chạy TCP.");
+            isRunningTeach = false;
+        }
         private void PauseSequence_Click(object sender, RoutedEventArgs e)
         {
             isPausedTeach = true;

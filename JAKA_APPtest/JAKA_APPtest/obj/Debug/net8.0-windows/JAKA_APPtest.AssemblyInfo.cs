@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("JAKA_APPtest")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+0a7de88c86a4239cd9ef0b1e13f4675f180a8685")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+4fa8fd0654ff3a8fe778b7fcb3c06294a9fa1494")]
 [assembly: System.Reflection.AssemblyProductAttribute("JAKA_APPtest")]
 [assembly: System.Reflection.AssemblyTitleAttribute("JAKA_APPtest")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

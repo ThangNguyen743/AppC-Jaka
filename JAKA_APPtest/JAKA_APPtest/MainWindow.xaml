@@ -59,11 +59,9 @@
                 <TextBlock Text="Robot IP:" VerticalAlignment="Center" FontWeight="SemiBold" Margin="5,0"/>
                 <TextBox x:Name="txtRobotIp" Width="160" Margin="5,0" Style="{StaticResource InputBox}"/>
                 <Button x:Name="btnConnect" Content="Connect" Style="{StaticResource ModernButtonStyle}" Click="Connect_Click"/>
-                <Button x:Name="btnPowerOn" Content="Power On" Style="{StaticResource ModernButtonStyle}" Click="PowerOn_Click"/>
-                <Button x:Name="btnEnable" Content="Enable" Style="{StaticResource ModernButtonStyle}" Click="Enable_Click"/>
-                <Button x:Name="btnDisable" Content="Disable" Style="{StaticResource ModernButtonStyle}" Click="Disable_Click"/>
-                <Button x:Name="btnPowerOff" Content="Power Off" Style="{StaticResource ModernButtonStyle}" Click="PowerOff_Click"/>
-				<Button x:Name="btnShutDown" Content="Shut Down" Style="{StaticResource ModernButtonStyle}" Click="ShutDown_Click"/>
+                <Button x:Name="btnPower" Content="Power On" Style="{StaticResource ModernButtonStyle}" Click="PowerToggle_Click"/>
+                <Button x:Name="btnEnableToggle" Content="Enable" Style="{StaticResource ModernButtonStyle}" Click="EnableToggle_Click"/>
+                <Button x:Name="btnShutDown" Content="Shut Down" Style="{StaticResource ModernButtonStyle}" Click="ShutDown_Click"/>
                 <Button x:Name="btnTheme" Content="🌙 Dark Mode" Style="{StaticResource ModernButtonStyle}" Click="ThemeToggle_Click"/>
             </WrapPanel>
         </Border>
@@ -140,6 +138,7 @@
                                 <TextBlock Text="Name:" VerticalAlignment="Center" Margin="10,0,0,0"/>
                                 <TextBox x:Name="txtPointName" Width="120" Style="{StaticResource InputBox}"/>
                                 <Button x:Name="btnRecordAdv" Content="Record Joint" Width="120" Style="{StaticResource ModernButtonStyle}" Click="RecordPointAdv_Click"/>
+                                <Button x:Name="btnRecordTCP" Content="Record TCP" Width="120" Style="{StaticResource ModernButtonStyle}" Click="RecordPointTCP_Click"/>
                             </StackPanel>
 
                             <ListBox x:Name="lstPointsAdv" Height="190" Margin="0,5"/>
@@ -153,7 +152,8 @@
 
                             <!-- Sau đó mới tới Run / Pause / Resume -->
                             <WrapPanel HorizontalAlignment="Center" Margin="0,5,0,0">
-                                <Button x:Name="btnRunAdv" Content="▶ Run" Width="100" Style="{StaticResource ModernButtonStyle}" Click="RunSequenceAdv_Click"/>
+                                <Button x:Name="btnRunAdv" Content="▶ Run Joint" Width="100" Style="{StaticResource ModernButtonStyle}" Click="RunSequenceAdv_Click"/>
+                                <Button x:Name="btnRunTCP" Content="▶ Run TCP" Width="100" Style="{StaticResource ModernButtonStyle}" Click="RunSequenceTCP_Click"/>
                                 <Button x:Name="btnPause" Content="⏸ Pause" Width="100" Style="{StaticResource ModernButtonStyle}" Click="PauseSequence_Click"/>
                                 <Button x:Name="btnResume" Content="▶ Resume" Width="100" Style="{StaticResource ModernButtonStyle}" Click="ResumeSequence_Click"/>
                             </WrapPanel>
